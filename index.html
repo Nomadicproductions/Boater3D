@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Boat Simulator - Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: none;
+        }
+        
+        body {
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            gap: 15px;
+            pointer-events: none;
+        }
+        
+        #info > div {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Mobile Controls Container */
+        #mobileControls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* Movement Joystick (Left) */
+        #movementJoystick {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            pointer-events: all;
+        }
+        
+        .joystick-base {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .joystick-thumb {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            border: 2px solid white;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: none;
+        }
+        
+        /* Camera Control Area (Right) */
+        #cameraControl {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            pointer-events: all;
+        }
+        
+        #cameraThumb {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            border: 2px solid white;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* Boost Button */
+        #boostButton {
+            position: absolute;
+            bottom: 170px;
+            right: 40px;
+            width: 100px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid white;
+            border-radius: 25px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        #boostButton:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        /* Reset Button */
+        #resetButton {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 59, 48, 0.8);
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+        }
+        
+        #resetButton:active {
+            transform: scale(0.9);
+            background: rgba(255, 59, 48, 1);
+        }
+        
+        /* Speed indicator */
+        .speed-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .speed-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ff88, #ffaa00, #ff0044);
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+        
+        /* Touch feedback */
+        .touch-feedback {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: touchRipple 0.6s ease-out;
+            z-index: 1000;
+        }
+        
+        @keyframes touchRipple {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+        
+        /* Orientation message */
+        #orientationMessage {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        #orientationMessage h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        #orientationMessage p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        
+        /* Vibration feedback indicator */
+        .vibration-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <div>⚡ <span id="speed">0</span> kts</div>
+        <div>🌊 <span id="waveHeight">0</span>m</div>
+    </div>
+    
+    <div id="mobileControls">
+        <!-- Movement Joystick -->
+        <div id="movementJoystick">
+            <div class="joystick-base"></div>
+            <div class="joystick-thumb" id="moveThumb"></div>
+        </div>
+        
+        <!-- Camera Control -->
+        <div id="cameraControl">
+            <div id="cameraThumb"></div>
+        </div>
+        
+        <!-- Boost Button -->
+        <div id="boostButton">BOOST</div>
+        
+        <!-- Speed Indicator -->
+        <div class="speed-indicator">
+            <div class="speed-bar" id="speedBar"></div>
+        </div>
+    </div>
+    
+    <!-- Reset Button -->
+    <div id="resetButton">↻</div>
+    
+    <!-- Orientation Message -->
+    <div id="orientationMessage">
+        <h2>📱 Please Rotate Your Device</h2>
+        <p>This game is best played in landscape mode</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="mobile-boat-simulator.js"></script>
+</body>
+</html>
